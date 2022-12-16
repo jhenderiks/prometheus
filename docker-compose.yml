@@ -1,8 +1,7 @@
 version: '3.7'
 
 networks:
-  front-tier:
-  back-tier:
+  monitor-net:
 
 services:
 
@@ -17,6 +16,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
     ports:
       - 9090:9090
     links:
@@ -27,7 +28,7 @@ services:
       - cadvisor
 #      - pushgateway
     networks:
-      - back-tier
+      - monitor-net
     restart: unless-stopped
 #    deploy:
 #      placement:
@@ -36,22 +37,20 @@ services:
 
   node-exporter:
     container_name: node-exporter
-    image: quay.io/prometheus/node-exporter:latest
+    image: quay.io/prometheus/node-exporter:v1.3.1 # https://github.com/prometheus/node_exporter/issues/2476
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/rootfs:ro
-      - /:/host:ro,rslave
-    command: 
-      - '--path.rootfs=/host'
+    command:
       - '--path.procfs=/host/proc' 
       - '--path.sysfs=/host/sys'
-      - --collector.filesystem.ignored-mount-points
+      - --collector.filesystem.mount-points-exclude
       - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
     ports:
       - 9100:9100
     networks:
-      - back-tier
+      - monitor-net
     restart: unless-stopped
     deploy:
       mode: global
@@ -64,7 +63,7 @@ services:
     volumes:
       - ./alertmanager/:/etc/alertmanager/
     networks:
-      - back-tier
+      - monitor-net
     restart: unless-stopped
     command:
       - '--config.file=/etc/alertmanager/config.yml'
@@ -87,7 +86,7 @@ services:
     ports:
       - 8080:8080
     networks:
-      - back-tier
+      - monitor-net
     restart: unless-stopped
     deploy:
       mode: global
@@ -106,8 +105,7 @@ services:
     env_file:
       - ./grafana/.env
     networks:
-      - back-tier
-      - front-tier
+      - monitor-net
     restart: unless-stopped
 
 #  pushgateway:
