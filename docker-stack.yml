@@ -1,9 +1,5 @@
 version: '3.7'
 
-volumes:
-    prometheus_data: {}
-    grafana_data: {}
-
 networks:
   monitor-net:
 
@@ -13,7 +9,7 @@ services:
     image: prom/prometheus:v2.36.2
     volumes:
       - ./prometheus/:/etc/prometheus/
-      - prometheus_data:/prometheus
+      - ./.data/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -74,7 +70,7 @@ services:
         condition: on-failure    
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor
+    image: zcube/cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
@@ -96,7 +92,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./.data/grafana:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     env_file:
       - ./grafana/config.monitoring

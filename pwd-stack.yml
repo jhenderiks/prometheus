@@ -1,8 +1,6 @@
 version: '3.1'
 
-volumes:
-    prometheus_data: {}
-    grafana_data: {}
+
     prometheus_config_data: {}
     alertmanager_config_data: {}
 
@@ -16,7 +14,7 @@ services:
     image: prom/prometheus:v2.0.0
     volumes:
       - prometheus_config_data:/etc/prometheus/
-      - prometheus_data:/prometheus
+      - ./.data/prometheus:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -31,7 +29,7 @@ services:
       - cadvisor
     networks:
       - back-tier
-    restart: always
+    restart: unless-stopped
     deploy:
       placement:
         constraints:
@@ -52,7 +50,7 @@ services:
       - 9100:9100
     networks:
       - back-tier
-    restart: always
+    restart: unless-stopped
     deploy:
       mode: global
 
@@ -64,7 +62,7 @@ services:
       - alertmanager_config_data:/etc/alertmanager/
     networks:
       - back-tier
-    restart: always
+    restart: unless-stopped
     command:
       - "--config.file=/etc/alertmanager/config.yml"
       - '--storage.path=/alertmanager'
@@ -73,7 +71,7 @@ services:
         constraints:
           - node.hostname == ${HOSTNAME}
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor
+    image: zcube/cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
@@ -83,7 +81,7 @@ services:
       - 8080:8080
     networks:
       - back-tier
-    restart: always
+    restart: unless-stopped
     deploy:
       mode: global
   source:
@@ -104,7 +102,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./.data/grafana:/var/lib/grafana
       - ./grafana/provisioning/:/etc/grafana/provisioning/
     environment: 
       - GF_SECURITY_ADMIN_PASSWORD=foobar
